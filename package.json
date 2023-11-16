@@ -1,6 +1,6 @@
 {
   "name": "script-url-title",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Get title of a URL from its HTML.",
   "private": true,
   "main": "index.js",
@@ -21,5 +21,10 @@
   "bugs": {
     "url": "https://github.com/javascriptf/script-publications-list/issues"
   },
-  "homepage": "https://github.com/javascriptf/script-publications-list#readme"
+  "homepage": "https://github.com/javascriptf/script-publications-list#readme",
+  "dependencies": {
+    "extra-fs": "^3.2.17",
+    "extra-sleep": "^1.0.20",
+    "puppeteer": "^21.5.2"
+  }
 }

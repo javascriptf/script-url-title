@@ -1,11 +1,18 @@
-const fs     = require('fs');
-const os     = require('os');
-const http   = require('http');
-const https  = require('https');
+const http  = require('http');
+const https = require('https');
+const fs        = require('extra-fs');
+const {sleep}   = require('extra-sleep');
+const puppeteer = require('puppeteer');
 
 
+/** Environment variables. */
+const E = process.env;
 /** Default options. */
 const OPTIONS = {
+  /** Path to Web browser executable. */
+  devtoolsPath: E.DEVTOOLS_PATH || `C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe`,
+  /** Path to Web browser user data directory. */
+  devtoolsDataDir: E.DEVTOOLS_DATA_DIR || `C:\\Users\\${E.USERNAME}\\AppData\\Local\\Google\\Chrome\\User Data`,
   /** Input file path (with URLs). */
   input:  null,
   /** Output file path (to write titles of URLs). */
@@ -15,78 +22,12 @@ const OPTIONS = {
   /** Sort URLs? */
   sort:   false,
   /** Throttle requests (in milliseconds). */
-  throttle: 1000,
+  throttle: 2000,
   /** Show help message? */
   help:   false,
   /** Error message. */
   error:  null,
 };
-
-
-
-
-/**
- * Read text from a file.
- * @param {string} pth path to the file
- * @returns {string} file content
- */
-function readFile(pth) {
-  var txt = fs.readFileSync(pth, 'utf8');
-  return txt.replace(/\r?\n/g, '\n');
-}
-
-
-/**
- * Write text to a file.
- * @param {string} pth path to the file
- * @param {string} txt text to write
- */
-function writeFile(pth, txt) {
-  var txt = txt.replace(/\r?\n/g, os.EOL);
-  fs.writeFileSync(pth, txt);
-}
-
-
-/**
- * Fetch the given URL and return the response body as a string.
- * @param {string} url URL to fetch
- * @returns {Promise<string>} response body
- */
-function fetchUrl(url) {
-  return new Promise((resolve, reject) => {
-    var fres = (res) => {
-      switch (res.statusCode) {
-        default:
-          reject(new Error(`Request Failed. Status Code: ${res.statusCode}`));
-          res.resume();
-          return;
-        case 301:
-        case 302:
-          return fetchUrl(res.headers.location);
-        case 200:
-          res.setEncoding('utf8');
-          let rawData = '';
-          res.on('data', chunk => { rawData += chunk; });
-          res.on('end', () => resolve(rawData));
-          return;
-      }
-    };
-    var req = url.startsWith('http:')? http.get(url, fres) : https.get(url, fres);
-    req.on('error', err => reject(err));
-    req.end();
-  });
-}
-
-
-/**
- * Get the title of a page from given HTML string.
- * @param {string} html HTML string
- * @returns {string} title of the page
- */
-function htmlTitle(html) {
-  let m = html.match(/<title>([^<]*)<\/title>/);
-  return m? m[1] : null;
-}
 
 
 
@@ -98,13 +39,15 @@ function htmlTitle(html) {
  * @returns {Promise<string>} titles of URLs
  */
 async function fetchUrlTitles(fin, o) {
-  var txt   = readFile(fin);
+  var executablePath = o.devtoolsPath    || OPTIONS.devtoolsPath;
+  var userDataDir    = o.devtoolsDataDir || OPTIONS.devtoolsDataDir;
+  var browser = await puppeteer.launch({executablePath, userDataDir, defaultViewport: null, headless: 'new'});
+  var txt   = fs.readFileTextSync(fin);
   var lines = txt.split(/\r?\n/);
   // Get URLs from the input file.
   var urls  = [];
   for (var l of lines) {
     var l = l.trim();
-    var l = l.replace(/\s*#.*/, '');
     var l = l.replace(/^-\s*/, '');
     var l = l.replace(/^\[.*?\]\((.*?)\)$/, '$1');
     if (l) urls.push(l);
@@ -115,16 +58,25 @@ async function fetchUrlTitles(fin, o) {
   // Fetch titles of URLs.
   var txt = '';
   for (var url of urls) {
-    if (o.output) console.error(`Fetching ${url} ...`);
-    var html  = await fetchUrl(url);
-    var title = htmlTitle(html);
+    // Fetch title of URL.
+    console.error(`Fetching ${url} ...`);
+    var page  = null;
+    var title = null;
+    if ((url.startsWith('http://') || url.startsWith('https://')) && !url.endsWith('.pdf')) {
+      var page  = await browser.newPage();
+      await page.goto(url, {waitUntil: 'domcontentloaded'});
+      var title = await page.title();
+    }
     var out   = title? `- [${title}](${url})` : `- ${url}`;
+    if (page) await page.close();
+    // Output title of URL.
     console.log(out);
-    if (o.output) console.error();
+    console.error();
     txt += out + '\n';
     // Relax for a while.
-    await new Promise(resolve => setTimeout(resolve, o.throttle || 1000));
+    await sleep(o.throttle || OPTIONS.throttle);
   }
+  await browser.close();
   return txt;
 }
 
@@ -146,7 +98,7 @@ async function main(argv) {
   if (o.help)  { showHelp(); return; }
   // Fetch titles of URLs.
   var out = await fetchUrlTitles(o.input, o);
-  if (o.output) writeFile(o.output, out);
+  if (o.output) fs.writeFileTextSync(o.output, out);
 }
 
 
