@@ -1,0 +1,25 @@
+{
+  "name": "script-url-title",
+  "version": "0.0.1",
+  "description": "Get title of a URL from its HTML.",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "test": "exit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/javascriptf/script-publications-list.git"
+  },
+  "keywords": [
+    "script",
+    "url",
+    "title"
+  ],
+  "author": "wolfram77@gmail.com",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/javascriptf/script-publications-list/issues"
+  },
+  "homepage": "https://github.com/javascriptf/script-publications-list#readme"
+}
