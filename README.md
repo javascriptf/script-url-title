@@ -21,6 +21,28 @@ $ node index.js urls.txt -o titles.md --unique --sort
 <br>
 
 
+## Usage
+
+```bash
+$ script-url-title [options] <input-file>
+
+# Options:
+#   <input file>                Input file with URLs.
+#   -o, --output <output file>  Write output to file.
+#   -u, --unique                Make URLs unique.
+#   -s, --sort                  Sort URLs.
+#   -t, --throttle <ms>         Throttle requests.
+#   -h, --help                  Show this help message.
+
+# Environment Variables:
+#   $DEVTOOLS_PATH                   Path to Chrome DevTools.
+#   $DEVTOOLS_DATA_DIR               Path to Chrome DevTools data directory.
+```
+
+<br>
+<br>
+
+
 ## References
 
 - [Configuration interface | Puppeteer](https://pptr.dev/api/puppeteer.configuration)
